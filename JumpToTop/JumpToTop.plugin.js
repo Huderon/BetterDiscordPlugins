@@ -60,14 +60,9 @@ module.exports = class JumpToTop {
       this.meta.name,
       ChannelHeader,
       "default",
-      (_, __, returnValue) => {
-        const header = Utils.findInTree(
-          returnValue,
-          (prop) => Array.isArray(prop?.toolbar) && prop.toolbar.some((element) => element?.key === "pins"),
-          { walkable: ["props", "children"] }
-        );
-        if (!header || header.channelType === 15) return;
-        header.toolbar.splice(0, 0, BdApi.React.createElement(ToolbarComponent, null));
+      (_, [{ toolbar, channelType}], returnValue) => {
+        if (channelType === 15) return;
+        toolbar.splice(0, 0, BdApi.React.createElement(ToolbarComponent, null));
       }
     );
   }
