@@ -61,7 +61,7 @@ module.exports = class JumpToTop {
       ChannelHeader,
       "default",
       (_, [{ toolbar, channelType}], returnValue) => {
-        if (channelType === 15) return;
+        if (channelType === undefined || channelType === 15) return;
         toolbar.splice(0, 0, BdApi.React.createElement(ToolbarComponent, null));
       }
     );
