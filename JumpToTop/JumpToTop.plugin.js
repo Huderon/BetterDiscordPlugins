@@ -9,7 +9,7 @@ const { Webpack, Patcher, React, Utils } = BdApi;
 const IconWrapperClasses = Webpack.getByKeys("iconWrapper", "clickable");
 const IconClasses = Webpack.getByKeys("browser", "icon");
 const transitionTo = Webpack.getByKeys("transitionTo")?.transitionTo;
-const Tooltip = Webpack.getByKeys("Tooltip")?.Tooltip;
+const Tooltip = Webpack.getByKeys("Tooltip", "FormSwitch")?.Tooltip;
 const ChannelHeader = Webpack.getByKeys("Icon", "Divider", {
   defaultExport: false,
 });
