@@ -6,11 +6,9 @@
  */
 
 const { Webpack, Patcher, Utils } = BdApi;
-const UserStore = Webpack.getStore("UserStore");
-const CurrentUser = UserStore.getCurrentUser();
 const MessageComponent = Webpack.getByStrings("isSystemMessage", "hasReply", { defaultExport: false });
 const TabBarComponent = Webpack.getByKeys("TabBar")?.TabBar;
-const UserProfileComponent = Webpack.getByKeys("UserProfileContext");
+const UserProfileComponent = Webpack.getByStrings(".UserProfileThemeContextProvider", { defaultExport: false });
 
 module.exports = class ThemeAttributes {
   constructor(meta) {
@@ -24,14 +22,14 @@ module.exports = class ThemeAttributes {
       const authorId = author?.id;
       if (!authorId) return;
       args['data-author-id'] = authorId;
-      args['data-author-self'] = authorId === CurrentUser.id;
+      args['data-author-self'] = !!author.email;
     });
     Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor?.Item?.prototype, "render", (_, __, returnValue) => {
       returnValue.props['data-tab-id'] = returnValue?._owner?.pendingProps?.id;
     });
     Patcher.after(this.meta.name, UserProfileComponent, "default", (_, [{user}], returnValue) => {
       returnValue.props['data-member-id'] = user.id;
-      returnValue.props['data-member-self'] = user.id === CurrentUser.id;
+      returnValue.props['data-member-self'] = !!user.email;
     });
   }
 
