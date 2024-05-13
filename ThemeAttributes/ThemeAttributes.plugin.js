@@ -8,7 +8,7 @@
 const { Webpack, Patcher, Utils } = BdApi;
 const MessageComponent = Webpack.getByStrings("isSystemMessage", "hasReply", { defaultExport: false });
 const TabBarComponent = Webpack.getByKeys("TabBar")?.TabBar;
-const UserProfileComponent = Webpack.getByStrings(".UserProfileThemeContextProvider", { defaultExport: false });
+const UserProfileComponent = Webpack.getModule((m) => m.render?.toString?.().includes(".UserProfileThemeContextProvider"));
 
 module.exports = class ThemeAttributes {
   constructor(meta) {
@@ -27,7 +27,7 @@ module.exports = class ThemeAttributes {
     Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor?.Item?.prototype, "render", (_, __, returnValue) => {
       returnValue.props['data-tab-id'] = returnValue?._owner?.pendingProps?.id;
     });
-    Patcher.after(this.meta.name, UserProfileComponent, "default", (_, [{user}], returnValue) => {
+    Patcher.after(this.meta.name, UserProfileComponent, "render", (_, [{user}], returnValue) => {
       returnValue.props['data-member-id'] = user.id;
       returnValue.props['data-member-self'] = !!user.email;
     });
