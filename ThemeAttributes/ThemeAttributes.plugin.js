@@ -27,6 +27,9 @@ module.exports = class ThemeAttributes {
     Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor?.Item?.prototype, "render", (_, __, returnValue) => {
       returnValue.props['data-tab-id'] = returnValue?._owner?.pendingProps?.id;
     });
+    Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor, "Header", (_, __, returnValue) => {
+      returnValue.props['data-tab-header-id'] = returnValue?.props?.children?.props?.children;
+    });
     Patcher.after(this.meta.name, UserProfileComponent, "render", (_, [{user}], returnValue) => {
       returnValue.props['data-member-id'] = user.id;
       returnValue.props['data-member-self'] = !!user.email;
