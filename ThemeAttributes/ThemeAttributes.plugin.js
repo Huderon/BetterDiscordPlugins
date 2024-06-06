@@ -24,10 +24,10 @@ module.exports = class ThemeAttributes {
       args['data-author-id'] = authorId;
       args['data-author-self'] = !!author.email;
     });
-    Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor?.Item?.prototype, "render", (_, __, returnValue) => {
+    Patcher.after(this.meta.name, TabBarComponent?.Item?.prototype, "render", (_, __, returnValue) => {
       returnValue.props['data-tab-id'] = returnValue?._owner?.pendingProps?.id;
     });
-    Patcher.after(this.meta.name, TabBarComponent?.prototype?.constructor, "Header", (_, __, returnValue) => {
+    Patcher.after(this.meta.name, TabBarComponent, "Header", (_, __, returnValue) => {
       returnValue.props['data-tab-header-id'] = returnValue?.props?.children?.props?.children;
     });
     Patcher.after(this.meta.name, UserProfileComponent, "render", (_, [{user}], returnValue) => {
