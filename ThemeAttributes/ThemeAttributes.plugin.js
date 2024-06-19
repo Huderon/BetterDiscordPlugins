@@ -8,7 +8,7 @@
 const { Webpack, Patcher, Utils } = BdApi;
 const MessageComponent = Webpack.getByStrings("isSystemMessage", "hasReply", { defaultExport: false });
 const TabBarComponent = Webpack.getByKeys("TabBar")?.TabBar;
-const UserProfileComponent = Webpack.getModule((m) => m.render?.toString?.().includes(".UserProfileThemeContextProvider"));
+const UserProfileComponent = Webpack.getModule((m) => m.render?.toString?.().includes(".showOutOfBoundaryComponents"));
 
 module.exports = class ThemeAttributes {
   constructor(meta) {
@@ -16,7 +16,7 @@ module.exports = class ThemeAttributes {
   }
 
   start() {
-    Patcher.before(this.meta.name, MessageComponent, "default", (_, [args], returnValue) => {
+    Patcher.before(this.meta.name, MessageComponent, "Z", (_, [args], returnValue) => {
       if (!args['aria-role-description'] === "Message") return;
       const author = Utils.findInTree(args, (arg) => arg?.username, { walkable: ["props", "childrenMessageContent", "message", "author"] });
       const authorId = author?.id;
@@ -28,7 +28,7 @@ module.exports = class ThemeAttributes {
       returnValue.props['data-tab-id'] = returnValue?._owner?.pendingProps?.id;
     });
     Patcher.after(this.meta.name, TabBarComponent, "Header", (_, __, returnValue) => {
-      returnValue.props['data-tab-header-id'] = returnValue?.props?.children?.props?.children;
+      returnValue.props['data-tab-header-id'] = returnValue.props.children.props.children;
     });
     Patcher.after(this.meta.name, UserProfileComponent, "render", (_, [{user}], returnValue) => {
       returnValue.props['data-member-id'] = user.id;
