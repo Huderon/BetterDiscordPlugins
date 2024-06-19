@@ -2,13 +2,13 @@
  * @name JumpToTop
  * @author Huderon
  * @description Adds a button to the channel header allowing you to jump to first message in a channel.
- * @version 1.0.2
+ * @version 1.0.3
  */
 
 const { Webpack, Patcher, React, Utils } = BdApi;
 const IconWrapperClasses = Webpack.getByKeys("iconWrapper", "clickable");
 const IconClasses = Webpack.getByKeys("browser", "icon");
-const transitionTo = Webpack.getByKeys("transitionTo")?.transitionTo;
+const transitionTo = Webpack.getByStrings("transitionTo - Transitioning to", { searchExports: true });
 const Tooltip = Webpack.getByKeys("Tooltip", "FormSwitch")?.Tooltip;
 const ChannelHeader = Webpack.getByKeys("Icon", "Divider", {
   defaultExport: false,
@@ -58,7 +58,7 @@ module.exports = class JumpToTop {
     Patcher.after(
       this.meta.name,
       ChannelHeader,
-      "default",
+      "ZP",
       (_, [{ toolbar }], returnValue) => {
         const Toolbar = Utils.findInTree(toolbar, (prop) => Array.isArray(prop) && prop.some(element => element?.key === "pins"), {walkable: [ "props", "children" ]})
         if (!Toolbar) return;
