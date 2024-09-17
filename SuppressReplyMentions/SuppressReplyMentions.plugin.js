@@ -5,29 +5,17 @@
  * @version 1.0.0
  */
 
-const { Data, Webpack, Patcher, React } = BdApi;
+const { Data, Webpack, Patcher, React, Utils } = BdApi;
 const Dispatcher = Webpack.getByKeys("actionLogger");
 const { Tooltip, FormSwitch, FormItem, SingleSelect } = Webpack.getByKeys("Tooltip", "FormSwitch");
 const UserStore = Webpack.getStore("UserStore");
-const replyActions = Webpack.getByKeys("createPendingReply");
-const RepliedMessageComponent = Webpack.getByKeys("renderSingleLineMessage");
-
+const [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
+  (m) => typeof m === "function" && m.toString().includes("shouldMention") && m.toString().includes("showMentionToggle")
+);
+const [RepliedMessageComponent, RepliedMessageComponentKey] = BdApi.Webpack.getWithKey(
+  (m) => typeof m === "function" && m.toString().includes(".repliedTextContentLeadingIcon")
+);
 const currentUser = UserStore.getCurrentUser();
-const suppressed = [];
-const settings = {
-  disableMention: true,
-  mentionSetting: 1,
-  allowManualPing: false,
-};
-
-function removeInterceptor(value) {
-  const interceptors = Dispatcher._interceptors;
-  const index = interceptors.findIndex((func) => func.name === value);
-  if (index > -1) {
-    interceptors.splice(index, 1);
-  }
-  return interceptors;
-}
 
 function SuppressedMentionComponent() {
   return React.createElement(Tooltip, { text: "Mention Suppressed" }, ({ onMouseEnter, onMouseLeave }) =>
@@ -77,51 +65,78 @@ function SingleSelectWrapper(args) {
 module.exports = class SuppressReplyMentions {
   constructor(meta) {
     this.meta = meta;
+    this.settings = {
+      disableMention: true,
+      mentionSetting: 1,
+      allowManualPing: false,
+    };
+    this.suppressed = [];
   }
 
-  messageInterceptor({ type, message }) {
-    if (type != "MESSAGE_CREATE") return;
-    if (!message.referenced_message) return;
-
-    if (settings.allowManualPing) {
-      const manualPing = "<@" + currentUser.id + ">";
-      if (message.content.includes(manualPing)) return;
+  removeInterceptor(name) {
+    const interceptors = Dispatcher._interceptors;
+    const index = interceptors.findIndex((func) => func.name === name || func.name === `bound ${name}`);
+    if (index > -1) {
+      interceptors.splice(index, 1);
     }
+    return interceptors;
+  }
 
-    const mentionIndex = message.mentions.findIndex((e) => e.id === currentUser.id);
+  messageInterceptor(e) {
+    if (!["MESSAGE_CREATE", "MESSAGE_UPDATE", "LOAD_MESSAGES_SUCCESS"].includes(e.type)) return;
 
-    switch (settings.mentionSetting) {
-      case 1:
-        if (message.referenced_message.author.id === currentUser.id && mentionIndex > -1) {
-          message.mentions.splice(mentionIndex, 1);
-          suppressed.push(message.id);
-        }
-        break;
-      case 2:
-        if (message.referenced_message.author.id === currentUser.id && mentionIndex === -1) {
-          message.mentions.push(currentUser);
-        }
-        break;
-      default:
-        return;
+    const messages = e.type === "LOAD_MESSAGES_SUCCESS" ? e.messages : [e.message];
+
+    for (let message of messages) {
+      if (
+        message.type !== 19 ||
+        !message.referenced_message ||
+        message.referenced_message.author.id !== currentUser.id ||
+        (this.settings.allowManualPing && message.content.includes(`<@${currentUser.id}>`)) ||
+        e.type === "LOAD_MESSAGES_SUCCESS" && !this.suppressed.includes(message.id)
+      ) continue;
+
+      const mentionIndex = message.mentions.findIndex((mention) => mention.id === currentUser.id);
+
+      switch (this.settings.mentionSetting) {
+        case 1:
+          if (mentionIndex >= 0) {
+            message.mentions.splice(mentionIndex, 1);
+            if (!this.suppressed.includes(message.id)) {
+              this.suppressed.push(message.id);
+            }
+          }
+          break;
+        case 2:
+          if (mentionIndex < 0) {
+            message.mentions.push(currentUser);
+          }
+          break;
+        default:
+          break;
+      }
     }
   }
 
   start() {
-    Object.assign(settings, Data.load("SuppressReplyMentions", "settings"));
-    Dispatcher.addInterceptor(this.messageInterceptor);
-    Patcher.before(this.meta.name, replyActions, "createPendingReply", (_, [args]) => {
-      if (!settings.disableMention) return;
-      args.shouldMention = false;
+    Object.assign(this.settings, Data.load("SuppressReplyMentions", "settings"));
+    Dispatcher.addInterceptor(this.messageInterceptor.bind(this));
+    Patcher.before(this.meta.name, replyActions, replyActionsKey, (_, [{ reply }]) => {
+      if (!this.settings.disableMention) return;
+      reply.shouldMention = false;
     });
-    Patcher.after(this.meta.name, RepliedMessageComponent, "default", (_, [args], returnValue) => {
-      if (suppressed.indexOf(args.baseMessage.id) < 0) return;
+    Patcher.after(this.meta.name, RepliedMessageComponent, RepliedMessageComponentKey, (_, [args], returnValue) => {
+      if (this.suppressed.indexOf(args.baseMessage.id) < 0) return;
+      if (this.settings.mentionSetting === 2) return;
       returnValue.props.children.splice(1, 0, React.createElement(SuppressedMentionComponent));
+      const Message = Utils.findInTree(returnValue, (prop) => prop?.withMentionPrefix, { walkable: null });
+      if (!Message) return;
+      Message.withMentionPrefix = false;
     });
   }
 
   stop() {
-    removeInterceptor("messageInterceptor");
+    this.removeInterceptor("messageInterceptor");
     Patcher.unpatchAll(this.meta.name);
   }
 
@@ -132,32 +147,32 @@ module.exports = class SuppressReplyMentions {
       React.createElement(FormSwitchWrapper, {
         label: "Disable Mention",
         description: "Automatically disables the 'Mention' option when replying to someone else.",
-        value: settings.disableMention,
+        value: this.settings.disableMention,
         onChange: (e) => {
-          settings.disableMention = e;
-          Data.save(this.meta.name, "settings", settings);
+          this.settings.disableMention = e;
+          Data.save(this.meta.name, "settings", this.settings);
         },
       }),
       React.createElement(FormSwitchWrapper, {
         label: "Allow Manual Pings",
         description: "Allow manual pings to mention even if they are in replies.",
-        value: settings.allowManualPing,
+        value: this.settings.allowManualPing,
         onChange: (e) => {
-          settings.allowManualPing = e;
-          Data.save(this.meta.name, "settings", settings);
+          this.settings.allowManualPing = e;
+          Data.save(this.meta.name, "settings", this.settings);
         },
       }),
       React.createElement(SingleSelectWrapper, {
         title: "Mention Settings",
-        value: settings.mentionSetting,
+        value: this.settings.mentionSetting,
         options: [
           { label: "Default", value: 0 },
           { label: "Suppress Mentions", value: 1 },
           { label: "Force Mentions", value: 2 },
         ],
         onChange: (e) => {
-          settings.mentionSetting = e;
-          Data.save(this.meta.name, "settings", settings);
+          this.settings.mentionSetting = e;
+          Data.save(this.meta.name, "settings", this.settings);
         },
       })
     );
