@@ -17,7 +17,7 @@ module.exports = class ThemeAttributes {
 
   start() {
     Patcher.before(this.meta.name, MessageComponent, "Z", (_, [args], returnValue) => {
-      if (!args['aria-role-description'] === "Message") return;
+      if (args['aria-roledescription'] !== "Message") return;
       const author = Utils.findInTree(args, (arg) => arg?.username, { walkable: ["props", "childrenMessageContent", "message", "author"] });
       const authorId = author?.id;
       if (!authorId) return;
