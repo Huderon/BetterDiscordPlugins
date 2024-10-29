@@ -110,11 +110,9 @@ module.exports = class MentionFilter {
         const currentUser = UserStore.getCurrentUser();
 
         for (let message of messages) {
+            if (!message.mentions.some(mention => mention.id === currentUser.id)) continue;
+            if ((this.settings.allowManualPing && message.content.includes(`<@${currentUser.id}>`))) continue;
             if (
-                message.type !== 19 ||
-                !message.referenced_message ||
-                message.referenced_message.author.id !== currentUser.id ||
-                (this.settings.allowManualPing && message.content.includes(`<@${currentUser.id}>`)) ||
                 (this.settings.filterSetting === 1 &&
                     this.isWhitelisted({
                         userId: message.author.id,
@@ -133,6 +131,7 @@ module.exports = class MentionFilter {
 
             switch (this.settings.mentionSetting) {
                 case 1:
+                    message.mentioned = false;
                     if (mentionIndex >= 0) {
                         message.mentions.splice(mentionIndex, 1);
                         if (this.suppressed.includes(message.id)) return;
