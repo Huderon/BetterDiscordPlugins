@@ -134,8 +134,11 @@ module.exports = class MentionFilter {
                     message.mentioned = false;
                     if (mentionIndex >= 0) {
                         message.mentions.splice(mentionIndex, 1);
-                        if (this.suppressed.includes(message.id)) return;
-                        this.suppressed.push(message.id);
+                        const suppressedIndex = this.suppressed.findIndex(s =>
+                            s.messageId === message.id);
+                        if (suppressedIndex < 0) {
+                            this.suppressed.push({messageId: message.id, userId: message.author.id});
+                        }
                     }
                     break;
                 case 2:
@@ -153,12 +156,18 @@ module.exports = class MentionFilter {
         if (this[filter][type].includes(id)) return;
         this[filter][type].push(id);
         Data.save(this.meta.name, filter, this[filter]);
+        if (type === "user") {
+            this.suppressed = this.suppressed.filter(s => !(s.userId === id));
+        }
     }
 
     removeFromFilter(filter, type, id) {
         if (!this[filter][type].includes(id)) return;
         this[filter][type] = this[filter][type].filter((item) => item !== id);
         Data.save(this.meta.name, filter, this[filter]);
+        if (type === "user") {
+            this.suppressed = this.suppressed.filter(s => !(s.userId === id));
+        }
     }
 
     isWhitelisted({userId = null, channelId = null, guildId = null} = {}) {
@@ -200,7 +209,6 @@ module.exports = class MentionFilter {
                     active: isWhitelisted,
                     action: () => {
                         this[isWhitelisted ? "removeFromFilter" : "addToFilter"]("whitelist", type, id);
-
                     },
                 }),
                 ContextMenu.buildItem({
@@ -279,7 +287,7 @@ module.exports = class MentionFilter {
             reply.shouldMention = false;
         });
         Patcher.after(this.meta.name, RepliedMessageComponent, RepliedMessageComponentKey, (_, [props], returnValue) => {
-            if (this.suppressed.indexOf(props.baseMessage.id) < 0) return;
+            if (this.suppressed.findIndex(s => s.messageId === props.baseMessage.id) < 0) return;
             if (this.settings.mentionSetting === 2) return;
             returnValue.props.children.splice(2, 0, React.createElement(SuppressedMentionComponent));
             const Message = Utils.findInTree(returnValue, (prop) => prop?.withMentionPrefix, {walkable: null});
