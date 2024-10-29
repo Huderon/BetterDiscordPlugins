@@ -4,9 +4,9 @@
 
 Adds a button to the channel header allowing you to jump to first message in a channel.
 
-## [SuppressReplyMentions](./SuppressReplyMentions/)
+## [MentionFilter](./MentionFilter)
 
-Suppresses mentions from Replied messages and when replying to someone else.
+Provides a filter for suppressing mentions. Heavily inspired by Strencher's SuppressReplyMentions.
 
 ## [ThemeAttributes](./ThemeAttributes)
 
