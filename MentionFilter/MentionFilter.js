@@ -1,7 +1,7 @@
 /**
  * @name MentionFilter
- * @description Provides a filter for suppressing mentions.
  * @author Huderon
+ * @description Provides a filter for suppressing mentions.
  * @version 1.0.0
  */
 
@@ -284,6 +284,18 @@ module.exports = class MentionFilter {
         ContextMenu.patch("guild-context", this.guildContextPatch);
         Patcher.before(this.meta.name, replyActions, replyActionsKey, (_, [{reply}]) => {
             if (!this.settings.disableMention) return;
+            if ((this.settings.filterSetting === 1 &&
+                    this.isWhitelisted({
+                        userId: reply.message.author.id,
+                        channelId: reply.channel.id,
+                        guildId: reply.channel.guild_id
+                    })) ||
+                (this.settings.filterSetting === 2 &&
+                    !this.isBlacklisted({
+                        userId: reply.message.author.id,
+                        channelId: reply.channel.id,
+                        guildId: reply.channel.guild_id
+                    }))) return;
             reply.shouldMention = false;
         });
         Patcher.after(this.meta.name, RepliedMessageComponent, RepliedMessageComponentKey, (_, [props], returnValue) => {
