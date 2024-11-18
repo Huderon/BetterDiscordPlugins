@@ -2,7 +2,7 @@
  * @name MentionFilter
  * @author Huderon
  * @description Provides a filter for suppressing mentions.
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 const {Data, Webpack, Patcher, React, Utils, ContextMenu} = BdApi;
@@ -12,7 +12,7 @@ const {Tooltip, FormSwitch, FormItem, FormDivider, FormContextProvider, SingleSe
 const UserStore = Webpack.getStore("UserStore");
 const FormClasses = Webpack.getByKeys("dividerDefault");
 const [replyActions, replyActionsKey] = Webpack.getWithKey(
-    (m) => typeof m === "function" && m.toString().includes("shouldMention") && m.toString().includes("showMentionToggle")
+    (m) => typeof m === "function" && m.toString().includes("shouldMention") && m.toString().includes("CREATE_PENDING_REPLY")
 );
 const [RepliedMessageComponent, RepliedMessageComponentKey] = Webpack.getWithKey(
     (m) => typeof m === "function" && m.toString().includes(".repliedTextContentLeadingIcon")
@@ -282,21 +282,21 @@ module.exports = class MentionFilter {
         ContextMenu.patch("user-context", this.userContextPatch);
         ContextMenu.patch("channel-context", this.channelContextPatch);
         ContextMenu.patch("guild-context", this.guildContextPatch);
-        Patcher.before(this.meta.name, replyActions, replyActionsKey, (_, [{reply}]) => {
+        Patcher.before(this.meta.name, replyActions, replyActionsKey, (_, [props]) => {
             if (!this.settings.disableMention) return;
             if ((this.settings.filterSetting === 1 &&
                     this.isWhitelisted({
-                        userId: reply.message.author.id,
-                        channelId: reply.channel.id,
-                        guildId: reply.channel.guild_id
+                        userId: props.message.author.id,
+                        channelId: props.channel.id,
+                        guildId: props.channel.guild_id
                     })) ||
                 (this.settings.filterSetting === 2 &&
                     !this.isBlacklisted({
-                        userId: reply.message.author.id,
-                        channelId: reply.channel.id,
-                        guildId: reply.channel.guild_id
+                        userId: props.message.author.id,
+                        channelId: props.channel.id,
+                        guildId: props.channel.guild_id
                     }))) return;
-            reply.shouldMention = false;
+            props.shouldMention = false;
         });
         Patcher.after(this.meta.name, RepliedMessageComponent, RepliedMessageComponentKey, (_, [props], returnValue) => {
             if (this.suppressed.findIndex(s => s.messageId === props.baseMessage.id) < 0) return;
