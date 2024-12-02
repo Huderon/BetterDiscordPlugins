@@ -8,7 +8,7 @@
 const { Webpack, Patcher, Utils } = BdApi;
 const MessageComponent = Webpack.getByStrings("isSystemMessage", "hasReply", { defaultExport: false });
 const TabBarComponent = Webpack.getByKeys("TabBar")?.TabBar;
-const UserProfileComponent = Webpack.getModule((m) => m.render?.toString?.().includes(".showOutOfBoundaryComponents"));
+const UserProfileComponent = Webpack.getModule((m) => m.render?.toString?.().includes(".ThemeContextProvider"));
 
 module.exports = class ThemeAttributes {
   constructor(meta) {
