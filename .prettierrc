@@ -1,0 +1,12 @@
+{
+	"experimentalTernaries": true,
+	"printWidth": 120,
+	"tabWidth": 4,
+	"useTabs": true,
+	"semi": true,
+	"quoteProps": "consistent",
+	"trailingComma": "all",
+	"bracketSpacing": false,
+	"bracketSameLine": true,
+	"endOfLine": "lf"
+}

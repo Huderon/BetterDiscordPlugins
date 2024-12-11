@@ -1,0 +1,24 @@
+{
+	"name": "BetterDiscordPlugins",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "node build.mjs && prettier --write ./*/**",
+		"dev": "node build.mjs --dev",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@9.14.3+sha512.c0f53ee99477ed969b82b289ad011a5d16bf1623c957e7f29eabe8d0c00b574c29b8c7f54f6c67ee710c73f285c8154d07ce44b46fe2c0eeb476a90441bac371",
+	"devDependencies": {
+		"@types/betterdiscord": "github:zerthox/betterdiscord-types",
+		"@types/node": "^22.10.1",
+		"@types/react": "^18.3.13",
+		"@types/react-dom": "^18.3.1",
+		"chokidar": "^4.0.1",
+		"esbuild": "^0.24.0",
+		"prettier": "^3.4.2"
+	}
+}
