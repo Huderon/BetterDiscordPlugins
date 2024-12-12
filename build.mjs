@@ -1,5 +1,5 @@
 import {context, build} from "esbuild";
-import {readdirSync, readFileSync} from "fs";
+import {readdirSync} from "fs";
 import {writeFile, readFile} from "fs/promises";
 import {join} from "path";
 
@@ -10,15 +10,26 @@ const autoDeployPlugin = (p) => ({
 			if (result.errors.length) return;
 
 			let configPath;
-			if (process.platform === "win32") {
-				configPath = process.env.APPDATA;
-			} else if (process.platform === "darwin" || process.platform === "linux") {
-				configPath = process.env.XDG_CONFIG_HOME || join(process.env.HOME, ".config");
+
+			switch (process.platform) {
+				case "win32":
+					configPath = process.env.APPDATA;
+					break;
+				case "darwin":
+					configPath = join(process.env.HOME, "Library", "Application Support");
+					break;
+				default:
+					configPath = process.env.XDG_CONFIG_HOME || join(process.env.HOME, ".config");
+					break;
 			}
+
 			const outFile = join(configPath, "BetterDiscord", "plugins", `${p}.plugin.js`);
 
-			const fileContent = await readFile(build.initialOptions.outfile);
-			await writeFile(outFile, fileContent);
+			const pluginFileContent = await readFile(build.initialOptions.outfile);
+			const metaFileContent = await readFile(`./src/plugins/${p}/meta.js`);
+			const updatedFileContent = `${metaFileContent}\n${pluginFileContent}`;
+			await writeFile(build.initialOptions.outfile, updatedFileContent);
+			await writeFile(outFile, updatedFileContent);
 
 			console.info("Deployed", p);
 		});
@@ -30,17 +41,13 @@ const options = readdirSync("./src/plugins").map((p) => ({
 	bundle: true,
 	platform: "node",
 	loader: {".css": "text"},
-	banner: {
-		js: readFileSync(`./src/plugins/${p}/meta.js`, "utf8"),
-	},
 	format: "cjs",
-	lineLimit: 120,
 	outfile: `./${p}/${p}.plugin.js`,
 	alias: {
-		shared: "./src/shared",
+		"@shared": "./src/shared",
 	},
 	jsx: "transform",
-	target: ["es2020"],
+	target: ["esnext"],
 	treeShaking: true,
 	plugins: [autoDeployPlugin(p)],
 }));
