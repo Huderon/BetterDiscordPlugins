@@ -49,6 +49,8 @@ const options = readdirSync("./src/plugins").map((p) => ({
 	jsx: "transform",
 	target: ["esnext"],
 	treeShaking: true,
+	jsxFactory: "BdApi.React.createElement",
+	jsxFragment: "BdApi.React.Fragment",
 	plugins: [autoDeployPlugin(p)],
 }));
 
