@@ -1,0 +1,77 @@
+{
+	"config": {
+		"changelog": [
+			{
+				"title": "New Stuff",
+				"type": "added",
+				"items": ["Added changelog"]
+			},
+			{
+				"title": "Bugs Squashed",
+				"type": "fixed",
+				"items": ["Fixed filtering logic"]
+			},
+			{
+				"title": "Improvements",
+				"type": "improved",
+				"items": ["Implemented BDs built-in settings menu"]
+			}
+		],
+		"settings": [
+			{
+				"type": "switch",
+				"id": "disableMention",
+				"name": "Disable Mention",
+				"note": "Automatically disables the mention when replying to someone.",
+				"value": true
+			},
+			{
+				"type": "switch",
+				"id": "allowManualPing",
+				"name": "Allow Manual Pings",
+				"note": "Allow manual pings even if they are in replies.",
+				"value": false
+			},
+			{
+				"type": "dropdown",
+				"id": "mentionSetting",
+				"name": "Mention Setting",
+				"value": 1,
+				"options": [
+					{
+						"label": "Default",
+						"value": 0
+					},
+					{
+						"label": "Suppress Mentions",
+						"value": 1
+					},
+					{
+						"label": "Force Mentions",
+						"value": 2
+					}
+				]
+			},
+			{
+				"type": "dropdown",
+				"id": "filterSetting",
+				"name": "Filter Setting",
+				"value": 0,
+				"options": [
+					{
+						"label": "Default",
+						"value": 0
+					},
+					{
+						"label": "Whitelist",
+						"value": 1
+					},
+					{
+						"label": "Blacklist",
+						"value": 2
+					}
+				]
+			}
+		]
+	}
+}

@@ -1,154 +1,19 @@
-/**
- * @name MentionFilter
- * @author Huderon
- * @description Provides a filter for suppressing mentions.
- * @version 1.0.2
- * @source https://github.com/Huderon/BetterDiscordPlugins/blob/main/MentionFilter/MentionFilter.plugin.js
- * @invite NUH7cYDZ5A
- */
+import {config} from "./config.json";
+import {SettingsManager} from "@shared/SettingsManager";
+import SuppressedMentionComponent from "./components/SuppressedMentionComponent";
 
-"use strict";
-
-// src/plugins/MentionFilter/config.json
-var config = {
-	changelog: [
-		{
-			title: "New Stuff",
-			type: "added",
-			items: ["Added changelog"],
-		},
-		{
-			title: "Bugs Squashed",
-			type: "fixed",
-			items: ["Fixed filtering logic"],
-		},
-		{
-			title: "Improvements",
-			type: "improved",
-			items: ["Implemented BDs built-in settings menu"],
-		},
-	],
-	settings: [
-		{
-			type: "switch",
-			id: "disableMention",
-			name: "Disable Mention",
-			note: "Automatically disables the mention when replying to someone.",
-			value: true,
-		},
-		{
-			type: "switch",
-			id: "allowManualPing",
-			name: "Allow Manual Pings",
-			note: "Allow manual pings even if they are in replies.",
-			value: false,
-		},
-		{
-			type: "dropdown",
-			id: "mentionSetting",
-			name: "Mention Setting",
-			value: 1,
-			options: [
-				{
-					label: "Default",
-					value: 0,
-				},
-				{
-					label: "Suppress Mentions",
-					value: 1,
-				},
-				{
-					label: "Force Mentions",
-					value: 2,
-				},
-			],
-		},
-		{
-			type: "dropdown",
-			id: "filterSetting",
-			name: "Filter Setting",
-			value: 0,
-			options: [
-				{
-					label: "Default",
-					value: 0,
-				},
-				{
-					label: "Whitelist",
-					value: 1,
-				},
-				{
-					label: "Blacklist",
-					value: 2,
-				},
-			],
-		},
-	],
-};
-
-// src/shared/SettingsManager.js
-var SettingsManager = class {
-	constructor(pluginName, config2) {
-		this.pluginName = pluginName;
-		this.settingsPanel = config2.settings;
-		this.defaultSettings = Object.fromEntries(
-			this.settingsPanel.flatMap((setting) =>
-				setting.type === "category" ?
-					setting.settings.map((setting2) => [setting2.id, setting2.value])
-				:	[[setting.id, setting.value]],
-			),
-		);
-		this.settings = {...this.defaultSettings, ...BdApi.Data.load(this.pluginName, "settings")};
-		this.syncSettingsPanel();
-	}
-	syncSettingsPanel() {
-		for (const key in this.settings) {
-			this.updateSettingsPanel(key, this.settings[key]);
-		}
-	}
-	updateSettingsPanel(id, value) {
-		const setting = this.settingsPanel
-			.flatMap((s) => (s.type === "category" ? s.settings : s))
-			.find((m) => m.id === id);
-		if (setting) setting.value = value;
-	}
-	get(key) {
-		return this.settings[key];
-	}
-	set(key, value) {
-		this.settings[key] = value;
-		BdApi.Data.save(this.pluginName, "settings", this.settings);
-		this.updateSettingsPanel(key, value);
-	}
-};
-
-// src/plugins/MentionFilter/components/SuppressedMentionComponent.jsx
-var Tooltip = BdApi.Components?.Tooltip;
-function SuppressedMentionComponent() {
-	return /* @__PURE__ */ BdApi.React.createElement(
-		Tooltip,
-		{text: "Mention Suppressed"},
-		({onMouseEnter, onMouseLeave}) =>
-			/* @__PURE__ */ BdApi.React.createElement(
-				"span",
-				{className: "suppressedMention", onMouseEnter, onMouseLeave},
-				"@",
-			),
-	);
-}
-
-// src/plugins/MentionFilter/index.jsx
-var Dispatcher = BdApi.Webpack.getByKeys("actionLogger");
-var UserStore = BdApi.Webpack.getStore("UserStore");
-var [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
+const Dispatcher = BdApi.Webpack.getByKeys("actionLogger");
+const UserStore = BdApi.Webpack.getStore("UserStore");
+const [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
 	(m) =>
 		typeof m === "function" &&
 		m.toString().includes("shouldMention") &&
 		m.toString().includes("CREATE_PENDING_REPLY"),
 );
-var [RepliedMessageComponent, RepliedMessageComponentKey] = BdApi.Webpack.getWithKey(
+const [RepliedMessageComponent, RepliedMessageComponentKey] = BdApi.Webpack.getWithKey(
 	BdApi.Webpack.Filters.byStrings(".repliedMessage", ".repliedMessageClickableSpine"),
 );
+
 function removeInterceptor(name) {
 	const interceptors = Dispatcher._interceptors;
 	const index = interceptors.findIndex((func) => func.name === name || func.name === `bound ${name}`);
@@ -157,6 +22,7 @@ function removeInterceptor(name) {
 	}
 	return interceptors;
 }
+
 module.exports = class MentionFilter {
 	constructor(meta) {
 		this.meta = meta;
@@ -176,17 +42,20 @@ module.exports = class MentionFilter {
 	// Sorry to whoever has to read this. If you can think of a way to make it more easily parseable, let me know
 	messageInterceptor = (e) => {
 		if (!["MESSAGE_CREATE", "MESSAGE_UPDATE", "LOAD_MESSAGES_SUCCESS"].includes(e.type)) return;
+
 		const messages = e.type === "LOAD_MESSAGES_SUCCESS" ? e.messages : [e.message];
 		const currentUser = UserStore.getCurrentUser();
 		const mentionSetting = this.settings.get("mentionSetting");
 		const filterSetting = this.settings.get("filterSetting");
 		const allowManualPing = this.settings.get("allowManualPing");
+
 		for (let message of messages) {
 			if (
 				!message.mentions.some((mention) => mention.id === currentUser.id) &&
 				message?.referenced_message?.author.id !== currentUser.id
 			)
 				continue;
+
 			const isWhitelisted = this.isWhitelisted({
 				userId: message.author.id,
 				channelId: message.channel_id,
@@ -198,6 +67,7 @@ module.exports = class MentionFilter {
 				guildId: message.guild_id,
 			});
 			const mentionIndex = message.mentions.findIndex((mention) => mention.id === currentUser.id);
+
 			if (
 				(allowManualPing &&
 					message.content.includes(`<@${currentUser.id}>`) &&
@@ -206,6 +76,7 @@ module.exports = class MentionFilter {
 				(filterSetting === 2 && !isBlacklisted)
 			)
 				continue;
+
 			switch (mentionSetting) {
 				case 1:
 					if ((filterSetting === 1 && isWhitelisted) || (filterSetting === 2 && !isBlacklisted)) break;
@@ -232,6 +103,7 @@ module.exports = class MentionFilter {
 			}
 		}
 	};
+
 	addToFilter(filter, type, id) {
 		if (this[filter][type].includes(id)) return;
 		this[filter][type].push(id);
@@ -240,6 +112,7 @@ module.exports = class MentionFilter {
 			this.suppressed = this.suppressed.filter((s) => !(s.userId === id));
 		}
 	}
+
 	removeFromFilter(filter, type, id) {
 		if (!this[filter][type].includes(id)) return;
 		this[filter][type] = this[filter][type].filter((item) => item !== id);
@@ -248,6 +121,7 @@ module.exports = class MentionFilter {
 			this.suppressed = this.suppressed.filter((s) => !(s.userId === id));
 		}
 	}
+
 	isWhitelisted({userId = null, channelId = null, guildId = null} = {}) {
 		return (
 			(userId && this.whitelist.user.includes(userId)) ||
@@ -255,6 +129,7 @@ module.exports = class MentionFilter {
 			(guildId && this.whitelist.guild.includes(guildId))
 		);
 	}
+
 	isBlacklisted({userId = null, channelId = null, guildId = null} = {}) {
 		return (
 			(userId && this.blacklist.user.includes(userId)) ||
@@ -262,6 +137,7 @@ module.exports = class MentionFilter {
 			(guildId && this.blacklist.guild.includes(guildId))
 		);
 	}
+
 	userContextPatch = (returnValue, {user: {id}}) => {
 		const buttonNode = BdApi.Utils.findInTree(
 			returnValue,
@@ -270,6 +146,7 @@ module.exports = class MentionFilter {
 		if (!buttonNode) return;
 		buttonNode.push(this.contextMenuItem("user", id));
 	};
+
 	channelContextPatch = (returnValue, {channel: {id}}) => {
 		const buttonNode = BdApi.Utils.findInTree(
 			returnValue,
@@ -278,6 +155,7 @@ module.exports = class MentionFilter {
 		if (!buttonNode) return;
 		buttonNode.push(this.contextMenuItem("channel", id));
 	};
+
 	guildContextPatch = (returnValue, {guild: {id}}) => {
 		const buttonNode = BdApi.Utils.findInTree(
 			returnValue,
@@ -286,6 +164,7 @@ module.exports = class MentionFilter {
 		if (!buttonNode) return;
 		buttonNode.push(this.contextMenuItem("guild", id));
 	};
+
 	contextMenuItem = (type, id) => {
 		const isWhitelisted = this.isWhitelisted({[`${type}Id`]: id});
 		const isBlacklisted = this.isBlacklisted({[`${type}Id`]: id});
@@ -312,6 +191,7 @@ module.exports = class MentionFilter {
 			],
 		});
 	};
+
 	start() {
 		const currentVersion = BdApi.Data.load(this.meta.name, "version");
 		if (currentVersion !== this.meta.version) {
@@ -353,11 +233,7 @@ module.exports = class MentionFilter {
 			(_, [props], returnValue) => {
 				if (this.suppressed.findIndex((s) => s.messageId === props.baseMessage.id) < 0) return;
 				if (this.settings.get("mentionSetting") === 2) return;
-				returnValue.props.children.splice(
-					2,
-					0,
-					/* @__PURE__ */ BdApi.React.createElement(SuppressedMentionComponent, null),
-				);
+				returnValue.props.children.splice(2, 0, <SuppressedMentionComponent />);
 				const Message = BdApi.Utils.findInTree(returnValue, (prop) => prop?.withMentionPrefix, {
 					walkable: null,
 				});
@@ -366,6 +242,7 @@ module.exports = class MentionFilter {
 			},
 		);
 	}
+
 	stop() {
 		removeInterceptor("messageInterceptor");
 		BdApi.ContextMenu.unpatch("user-context", this.userContextPatch);
@@ -374,6 +251,7 @@ module.exports = class MentionFilter {
 		BdApi.Patcher.unpatchAll(this.meta.name);
 		BdApi.Data.save(this.meta.name, "version", this.meta.version);
 	}
+
 	getSettingsPanel() {
 		return BdApi.UI.buildSettingsPanel({
 			settings: this.settings.settingsPanel,
