@@ -187,6 +187,7 @@ module.exports = class MentionFilter {
 				message?.referenced_message?.author.id !== currentUser.id
 			)
 				continue;
+			if (allowManualPing && message.content.includes(`<@${currentUser.id}>`)) continue;
 			const isWhitelisted = this.isWhitelisted({
 				userId: message.author.id,
 				channelId: message.channel_id,
@@ -198,14 +199,6 @@ module.exports = class MentionFilter {
 				guildId: message.guild_id,
 			});
 			const mentionIndex = message.mentions.findIndex((mention) => mention.id === currentUser.id);
-			if (
-				(allowManualPing &&
-					message.content.includes(`<@${currentUser.id}>`) &&
-					filterSetting === 1 &&
-					isWhitelisted) ||
-				(filterSetting === 2 && !isBlacklisted)
-			)
-				continue;
 			switch (mentionSetting) {
 				case 1:
 					if ((filterSetting === 1 && isWhitelisted) || (filterSetting === 2 && !isBlacklisted)) break;
