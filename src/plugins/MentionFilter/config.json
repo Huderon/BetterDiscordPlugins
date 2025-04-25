@@ -2,19 +2,9 @@
 	"config": {
 		"changelog": [
 			{
-				"title": "New Stuff",
-				"type": "added",
-				"items": ["Added changelog"]
-			},
-			{
 				"title": "Bugs Squashed",
 				"type": "fixed",
-				"items": ["Fixed filtering logic"]
-			},
-			{
-				"title": "Improvements",
-				"type": "improved",
-				"items": ["Implemented BDs built-in settings menu"]
+				"items": ["Fixed versioning"]
 			}
 		],
 		"settings": [

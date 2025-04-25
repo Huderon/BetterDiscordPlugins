@@ -2,7 +2,7 @@
  * @name MentionFilter
  * @author Huderon
  * @description Provides a filter for suppressing mentions.
- * @version 1.0.2
+ * @version 1.0.3
  * @source https://github.com/Huderon/BetterDiscordPlugins/blob/main/MentionFilter/MentionFilter.plugin.js
  * @invite NUH7cYDZ5A
  */
@@ -13,19 +13,9 @@
 var config = {
 	changelog: [
 		{
-			title: "New Stuff",
-			type: "added",
-			items: ["Added changelog"],
-		},
-		{
 			title: "Bugs Squashed",
 			type: "fixed",
-			items: ["Fixed filtering logic"],
-		},
-		{
-			title: "Improvements",
-			type: "improved",
-			items: ["Implemented BDs built-in settings menu"],
+			items: ["Fixed versioning"],
 		},
 	],
 	settings: [
@@ -313,6 +303,7 @@ module.exports = class MentionFilter {
 				subtitle: this.meta.version,
 				changes: config.changelog,
 			});
+			BdApi.Data.save(this.meta.name, "version", this.meta.version);
 		}
 		Object.assign(this.whitelist, BdApi.Data.load(this.meta.name, "whitelist"));
 		Object.assign(this.blacklist, BdApi.Data.load(this.meta.name, "blacklist"));
@@ -365,7 +356,6 @@ module.exports = class MentionFilter {
 		BdApi.ContextMenu.unpatch("channel-context", this.channelContextPatch);
 		BdApi.ContextMenu.unpatch("guild-context", this.guildContextPatch);
 		BdApi.Patcher.unpatchAll(this.meta.name);
-		BdApi.Data.save(this.meta.name, "version", this.meta.version);
 	}
 	getSettingsPanel() {
 		return BdApi.UI.buildSettingsPanel({
