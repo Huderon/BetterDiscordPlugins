@@ -2,7 +2,7 @@
  * @name MentionFilter
  * @author Huderon
  * @description Provides a filter for suppressing mentions.
- * @version 1.0.3
+ * @version 1.0.4
  * @source https://github.com/Huderon/BetterDiscordPlugins/blob/main/MentionFilter/MentionFilter.plugin.js
  * @invite NUH7cYDZ5A
  */
@@ -15,7 +15,7 @@ var config = {
 		{
 			title: "Bugs Squashed",
 			type: "fixed",
-			items: ["Fixed versioning"],
+			items: ["Fixed webpack searches"],
 		},
 	],
 	settings: [
@@ -128,7 +128,7 @@ function SuppressedMentionComponent() {
 }
 
 // src/plugins/MentionFilter/index.jsx
-var Dispatcher = BdApi.Webpack.getByKeys("actionLogger");
+var Dispatcher = BdApi.Webpack.getByKeys("actionLogger", {searchExports: true});
 var UserStore = BdApi.Webpack.getStore("UserStore");
 var [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
 	(m) =>
@@ -137,7 +137,7 @@ var [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
 		m.toString().includes("CREATE_PENDING_REPLY"),
 );
 var [RepliedMessageComponent, RepliedMessageComponentKey] = BdApi.Webpack.getWithKey(
-	BdApi.Webpack.Filters.byStrings(".repliedMessage", ".repliedMessageClickableSpine"),
+	BdApi.Webpack.Filters.byStrings(".onClickReply,onMouseEnter:"),
 );
 function removeInterceptor(name) {
 	const interceptors = Dispatcher._interceptors;
@@ -343,7 +343,7 @@ module.exports = class MentionFilter {
 					/* @__PURE__ */ BdApi.React.createElement(SuppressedMentionComponent, null),
 				);
 				const Message = BdApi.Utils.findInTree(returnValue, (prop) => prop?.withMentionPrefix, {
-					walkable: null,
+					walkable: ["props", "children"],
 				});
 				if (!Message) return;
 				Message.withMentionPrefix = false;

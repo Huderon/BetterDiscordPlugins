@@ -4,7 +4,7 @@
 			{
 				"title": "Bugs Squashed",
 				"type": "fixed",
-				"items": ["Fixed versioning"]
+				"items": ["Fixed webpack searches"]
 			}
 		],
 		"settings": [

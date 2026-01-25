@@ -2,7 +2,7 @@ import {config} from "./config.json";
 import {SettingsManager} from "@shared/SettingsManager";
 import SuppressedMentionComponent from "./components/SuppressedMentionComponent";
 
-const Dispatcher = BdApi.Webpack.getByKeys("actionLogger");
+const Dispatcher = BdApi.Webpack.getByKeys("actionLogger", {searchExports: true});
 const UserStore = BdApi.Webpack.getStore("UserStore");
 const [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
 	(m) =>
@@ -11,7 +11,7 @@ const [replyActions, replyActionsKey] = BdApi.Webpack.getWithKey(
 		m.toString().includes("CREATE_PENDING_REPLY"),
 );
 const [RepliedMessageComponent, RepliedMessageComponentKey] = BdApi.Webpack.getWithKey(
-	BdApi.Webpack.Filters.byStrings(".repliedMessage", ".repliedMessageClickableSpine"),
+	BdApi.Webpack.Filters.byStrings(".onClickReply,onMouseEnter:"),
 );
 
 function removeInterceptor(name) {
@@ -228,7 +228,7 @@ module.exports = class MentionFilter {
 				if (this.settings.get("mentionSetting") === 2) return;
 				returnValue.props.children.splice(2, 0, <SuppressedMentionComponent />);
 				const Message = BdApi.Utils.findInTree(returnValue, (prop) => prop?.withMentionPrefix, {
-					walkable: null,
+					walkable: ["props", "children"],
 				});
 				if (!Message) return;
 				Message.withMentionPrefix = false;
